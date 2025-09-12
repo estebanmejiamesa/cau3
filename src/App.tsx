@@ -11,7 +11,6 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
  * - ❌ Sin botón de importar
  * - ✅ SID por pestaña (sessionStorage) + autosave/localStorage por SID
  * - ✅ Carga automática por SID si existe en localStorage
- * - ✍️ G con labels visibles fuera de los campos
  * - 🛠️ Fix TS: tipado explícito de `children`
  */
 
@@ -31,14 +30,15 @@ interface Regla {
   explicacion: string;
   capacidad: string;
 }
+
 type Viable = "Sí" | "No" | "Depende";
+
 interface ModeloRow {
   id: UUID;
-  nombre: string;
+  nombre: string; // nombre fijo (no editable)
   fortalezas: string;
   riesgos: string;
   viable: Viable;
-  impactoCapacidad: string;
 }
 
 /* ---------- Parte 2 ---------- */
@@ -48,15 +48,11 @@ interface CriterioRow {
   puntaje: number; // 1..5
   justificacion: string;
 }
+
 interface CondicionesExito {
   resistencia: string;
   condicionMinima: string;
   accion90: string;
-}
-interface PropuestaFinal {
-  modeloElegido: string;
-  porque: string;
-  primerPaso: string;
 }
 
 /* ---------- App State ---------- */
@@ -70,15 +66,28 @@ interface AppState {
   parte2: {
     E_eval: CriterioRow[];
     F_condiciones: CondicionesExito;
-    G_propuesta: PropuestaFinal;
   };
 }
 
-const VERSION = "CaujaralCanvas-Modelos-v3" as const;
+const VERSION = "CaujaralCanvas-Modelos-v6" as const;
 const DEFAULT_CAPTION =
   "Modelos organizativos y arquetipo — Comparar centralized / decentralized / center-led y elegir arquetipo con criterios (90 min)";
 
 const newId = () => crypto.randomUUID();
+
+/* ---------- Definiciones de modelos (no editables) ---------- */
+const MODEL_DEFS: Record<string, string> = {
+  Funcional:
+    "Se organiza por áreas especializadas (Operaciones, Finanzas, RR. HH., Comercial). Maximiza la profundidad técnica y economías de escala; coordinación entre áreas por procesos y jefaturas. Idónea cuando hay portafolio acotado y necesidades de estandarización.",
+  Divisional:
+    "Se estructura por líneas de negocio, regiones o segmentos. Cada división replica funciones para estar cerca del cliente y responder al contexto. Aporta foco y accountability; riesgo de duplicidades y mayores costos.",
+  Matricial:
+    "Combina ejes funcionales y divisionales. Las personas reportan a dos liderazgos (funcional y de unidad/proyecto). Favorece proyectos transversales y asignación flexible; exige gobernanza clara para evitar ambigüedad y conflictos de prioridad.",
+  "Híbrido / Center-led":
+    "Capacidades comunes y estándares en un centro (centers of excellence) con ejecución descentralizada en unidades. ‘Lo común al centro, lo diferencial en la orilla’. Equilibra eficiencia y autonomía; requiere mecanismos de coordinación (SLAs, PMO, foros).",
+};
+
+const getModelDef = (name: string) => MODEL_DEFS[name] ?? "—";
 
 /* ---------- Inicialización por SID ---------- */
 const initialState = (sid: string): AppState => ({
@@ -97,7 +106,6 @@ const initialState = (sid: string): AppState => ({
         fortalezas: "",
         riesgos: "",
         viable: "Depende",
-        impactoCapacidad: "",
       },
       {
         id: newId(),
@@ -105,7 +113,6 @@ const initialState = (sid: string): AppState => ({
         fortalezas: "",
         riesgos: "",
         viable: "Depende",
-        impactoCapacidad: "",
       },
       {
         id: newId(),
@@ -113,7 +120,6 @@ const initialState = (sid: string): AppState => ({
         fortalezas: "",
         riesgos: "",
         viable: "Depende",
-        impactoCapacidad: "",
       },
       {
         id: newId(),
@@ -121,7 +127,6 @@ const initialState = (sid: string): AppState => ({
         fortalezas: "",
         riesgos: "",
         viable: "Depende",
-        impactoCapacidad: "",
       },
     ],
   },
@@ -159,7 +164,6 @@ const initialState = (sid: string): AppState => ({
       },
     ],
     F_condiciones: { resistencia: "", condicionMinima: "", accion90: "" },
-    G_propuesta: { modeloElegido: "", porque: "", primerPaso: "" },
   },
 });
 
@@ -195,13 +199,12 @@ function toReadableTxt(s: AppState): string {
   // B) Modelos
   L.push("📦 B) Modelos organizativos y su pertinencia");
   s.parte1.B_modelos.forEach((m) => {
+    const def = getModelDef(m.nombre);
     L.push(`  • Modelo: ${m.nombre || "—"}`);
+    L.push(`    Definición: ${def}`);
     L.push(`    Fortalezas: ${m.fortalezas || "—"}`);
     L.push(`    Riesgos: ${m.riesgos || "—"}`);
     L.push(`    ¿Viable?: ${m.viable}`);
-    L.push(
-      `    Capacidad que fortalece/debilita: ${m.impactoCapacidad || "—"}`
-    );
   });
   L.push("");
 
@@ -229,17 +232,6 @@ function toReadableTxt(s: AppState): string {
   L.push(
     `  Acción de validación (90 días): ${
       s.parte2.F_condiciones.accion90 || "—"
-    }`
-  );
-  L.push("");
-
-  // G) Propuesta final
-  L.push("🤝 G) Propuesta final del grupo");
-  L.push(`  Modelo elegido: ${s.parte2.G_propuesta.modeloElegido || "—"}`);
-  L.push(`  Porque nos permite: ${s.parte2.G_propuesta.porque || "—"}`);
-  L.push(
-    `  Primer paso para iniciar su implementación: ${
-      s.parte2.G_propuesta.primerPaso || "—"
     }`
   );
   L.push("");
@@ -327,7 +319,6 @@ const SectionCard = ({
             </p>
           )}
         </div>
-        {/* sin símbolo # en el extremo derecho */}
       </div>
       <div className="p-4 md:p-6 text-slate-200">{children}</div>
     </div>
@@ -365,7 +356,7 @@ const TextArea = (props: TextAreaProps) => {
   return (
     <textarea
       {...rest}
-      className={`w-full min-h-[76px] rounded-xl border border-[#2a3a52] bg-[#0f1b2e] px-3 py-2 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      className={`w-full rounded-xl border border-[#2a3a52] bg-[#0f1b2e] px-3 py-2 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
     />
   );
 };
@@ -443,6 +434,7 @@ export default function ModelosOrganizativosCanvas() {
       return clone;
     });
   };
+
   const updateField = (
     path: string[],
     id: UUID,
@@ -460,16 +452,7 @@ export default function ModelosOrganizativosCanvas() {
       return clone;
     });
   };
-  const pushRow = (path: string[], row: unknown) => {
-    setState((prev) => {
-      const clone: any = structuredClone(prev);
-      let ref: any = clone;
-      for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]];
-      const last = path[path.length - 1];
-      ref[last] = [...ref[last], row];
-      return clone;
-    });
-  };
+
   const removeRow = (path: string[], id: UUID) => {
     setState((prev) => {
       const clone: any = structuredClone(prev);
@@ -484,28 +467,21 @@ export default function ModelosOrganizativosCanvas() {
   /* Reglas: min 3, max 5 */
   const addRegla = () => {
     if (state.parte1.A_reglas.length >= 5) return;
-    pushRow(["parte1", "A_reglas"], {
-      id: newId(),
-      principio: "",
-      explicacion: "",
-      capacidad: "",
-    } as Regla);
+    setState((prev) => ({
+      ...prev,
+      parte1: {
+        ...prev.parte1,
+        A_reglas: [
+          ...prev.parte1.A_reglas,
+          { id: newId(), principio: "", explicacion: "", capacidad: "" },
+        ],
+      },
+    }));
   };
+
   const removeRegla = (id: UUID) => {
     if (state.parte1.A_reglas.length <= 3) return;
     removeRow(["parte1", "A_reglas"], id);
-  };
-
-  /* Modelos: añadir fila extra si se desea */
-  const addModelo = () => {
-    pushRow(["parte1", "B_modelos"], {
-      id: newId(),
-      nombre: "",
-      fortalezas: "",
-      riesgos: "",
-      viable: "Depende",
-      impactoCapacidad: "",
-    } as ModeloRow);
   };
 
   /* Export / Reset */
@@ -516,6 +492,7 @@ export default function ModelosOrganizativosCanvas() {
       "text/plain;charset=utf-8"
     );
   };
+
   const handleReset = () => {
     if (
       confirm(
@@ -538,6 +515,11 @@ export default function ModelosOrganizativosCanvas() {
       console.assert(
         state.parte2.E_eval.length === 5,
         "Debe haber 5 criterios de evaluación"
+      );
+      // Asegurar los 4 modelos base
+      const nombres = state.parte1.B_modelos.map((m) => m.nombre);
+      ["Funcional", "Divisional", "Matricial", "Híbrido / Center-led"].forEach(
+        (n) => console.assert(nombres.includes(n), `Falta modelo: ${n}`)
       );
     } catch (e) {
       console.warn("Smoke test:", e);
@@ -572,7 +554,6 @@ export default function ModelosOrganizativosCanvas() {
               <ToolbarButton onClick={handleExportTxt}>
                 <span className="i-lucide-download h-4 w-4" /> Exportar TXT
               </ToolbarButton>
-
               <ToolbarButton onClick={handleReset}>
                 <span className="i-lucide-rotate-ccw h-4 w-4" /> Reset
               </ToolbarButton>
@@ -596,7 +577,7 @@ export default function ModelosOrganizativosCanvas() {
               </h2>
               <p className="text-sm text-slate-300 max-w-3xl">
                 Evalúen modelos, definan reglas no negociables y cierren con
-                evaluación, condiciones de éxito y propuesta final.
+                evaluación y condiciones de éxito.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -701,41 +682,43 @@ export default function ModelosOrganizativosCanvas() {
             anchor="b-modelos"
             emoji="📦"
             title="SECCIÓN B — Modelos organizativos y su pertinencia"
-            subtitle="Revisen cada modelo, sus fortalezas, riesgos, viabilidad y relación con capacidades críticas."
+            subtitle="Revisen cada modelo, su definición base (no editable), fortalezas, riesgos y viabilidad."
           >
             <div className="overflow-auto">
-              <table className="w-full min-w-[1100px] text-sm">
+              <table className="w-full min-w-[1020px] text-sm">
                 <thead>
                   <tr className="text-left text-slate-300">
-                    <th className="py-2 pr-4 w-[16%]">Modelo organizativo</th>
+                    <th className="py-2 pr-4 w-[36%]">
+                      Modelo organizativo (definición)
+                    </th>
                     <th className="py-2 pr-4 w-[28%]">
                       Fortalezas para el Club
                     </th>
                     <th className="py-2 pr-4 w-[28%]">Riesgos o fricciones</th>
-                    <th className="py-2 pr-4 w-[12%]">¿Viable?</th>
-                    <th className="py-2 pr-4 w-[16%]">Capacidad impactada</th>
-                    <th className="py-2 pr-0 w-[8%]"></th>
+                    <th className="py-2 pr-4 w-[8%]">¿Viable?</th>
+                    <th className="py-2 pr-0 w-[0%]"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {state.parte1.B_modelos.map((m) => (
-                    <tr key={m.id} className="border-t border-[#22314a]">
-                      <td className="py-2 pr-4">
-                        <Input
-                          value={m.nombre}
-                          onChange={(e) =>
-                            updateField(
-                              ["parte1", "B_modelos"],
-                              m.id,
-                              "nombre",
-                              e.target.value
-                            )
-                          }
-                          placeholder='p. ej., "Funcional"'
-                        />
+                    <tr
+                      key={m.id}
+                      className="border-t border-[#22314a] align-top"
+                    >
+                      {/* Nombre + Definición (NO editable) */}
+                      <td className="py-3 pr-4">
+                        <div className="font-semibold text-slate-100">
+                          {m.nombre}
+                        </div>
+                        <div className="mt-1 text-slate-300 leading-relaxed">
+                          {getModelDef(m.nombre)}
+                        </div>
                       </td>
+
+                      {/* Fortalezas — área ampliada */}
                       <td className="py-2 pr-4">
-                        <Input
+                        <TextArea
+                          className="min-h-[88px] leading-relaxed"
                           value={m.fortalezas}
                           onChange={(e) =>
                             updateField(
@@ -745,11 +728,14 @@ export default function ModelosOrganizativosCanvas() {
                               e.target.value
                             )
                           }
-                          placeholder="Beneficios clave para el Club"
+                          placeholder="Beneficios clave para el Club…"
                         />
                       </td>
+
+                      {/* Riesgos — área ampliada */}
                       <td className="py-2 pr-4">
-                        <Input
+                        <TextArea
+                          className="min-h-[88px] leading-relaxed"
                           value={m.riesgos}
                           onChange={(e) =>
                             updateField(
@@ -759,9 +745,11 @@ export default function ModelosOrganizativosCanvas() {
                               e.target.value
                             )
                           }
-                          placeholder="Riesgos o posibles fricciones"
+                          placeholder="Riesgos o posibles fricciones…"
                         />
                       </td>
+
+                      {/* ¿Viable? */}
                       <td className="py-2 pr-4">
                         <Select
                           value={m.viable}
@@ -779,20 +767,8 @@ export default function ModelosOrganizativosCanvas() {
                           <option>Depende</option>
                         </Select>
                       </td>
-                      <td className="py-2 pr-4">
-                        <Input
-                          value={m.impactoCapacidad}
-                          onChange={(e) =>
-                            updateField(
-                              ["parte1", "B_modelos"],
-                              m.id,
-                              "impactoCapacidad",
-                              e.target.value
-                            )
-                          }
-                          placeholder="¿Qué capacidad fortalece/debilita?"
-                        />
-                      </td>
+
+                      {/* Eliminar (queda deshabilitado si hay ≤4) */}
                       <td className="py-2 pr-0 text-right">
                         <button
                           onClick={() =>
@@ -813,12 +789,11 @@ export default function ModelosOrganizativosCanvas() {
                 </tbody>
               </table>
             </div>
+
             <div className="mt-3">
-              <ToolbarButton onClick={addModelo}>
-                + Agregar modelo
-              </ToolbarButton>
-              <Pill className="ml-2">
-                incluye: Funcional, Divisional, Matricial, Híbrido/Center-led
+              <Pill>
+                Incluye definiciones para: Funcional · Divisional · Matricial ·
+                Híbrido/Center-led
               </Pill>
             </div>
           </SectionCard>
@@ -826,7 +801,7 @@ export default function ModelosOrganizativosCanvas() {
 
         {/* PARTE 2 */}
         <div className="space-y-6">
-          {/* E — Evaluación */}
+          {/* C — Evaluación */}
           <SectionCard
             anchor="e-evaluacion"
             emoji="⭐"
@@ -889,7 +864,7 @@ export default function ModelosOrganizativosCanvas() {
             </div>
           </SectionCard>
 
-          {/* F — Condiciones de éxito */}
+          {/* D — Condiciones de éxito */}
           <SectionCard
             anchor="f-condiciones"
             emoji="🛠️"
@@ -927,62 +902,6 @@ export default function ModelosOrganizativosCanvas() {
                 }
                 placeholder="Acción concreta de validación (90 días)…"
               />
-            </div>
-          </SectionCard>
-
-          {/* G — Propuesta final (labels fuera) */}
-          <SectionCard
-            anchor="g-propuesta"
-            emoji="🤝"
-            title="SECCIÓN E — Propuesta final del grupo"
-            subtitle="Entregable final a presentar en plenaria."
-          >
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm text-slate-300">
-                  Modelo más adecuado (p. ej., Híbrido / Center-led)
-                </label>
-                <Input
-                  value={state.parte2.G_propuesta.modeloElegido}
-                  onChange={(e) =>
-                    updateValue(
-                      ["parte2", "G_propuesta", "modeloElegido"],
-                      e.target.value
-                    )
-                  }
-                  placeholder=""
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-300">
-                  Porque nos permite… (beneficios/razones)
-                </label>
-                <TextArea
-                  value={state.parte2.G_propuesta.porque}
-                  onChange={(e) =>
-                    updateValue(
-                      ["parte2", "G_propuesta", "porque"],
-                      e.target.value
-                    )
-                  }
-                  placeholder=""
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-slate-300">
-                  Primer paso para iniciar la implementación
-                </label>
-                <TextArea
-                  value={state.parte2.G_propuesta.primerPaso}
-                  onChange={(e) =>
-                    updateValue(
-                      ["parte2", "G_propuesta", "primerPaso"],
-                      e.target.value
-                    )
-                  }
-                  placeholder=""
-                />
-              </div>
             </div>
           </SectionCard>
         </div>
