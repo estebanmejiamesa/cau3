@@ -71,7 +71,7 @@ interface AppState {
 
 const VERSION = "CaujaralCanvas-Modelos-v7" as const;
 const DEFAULT_CAPTION =
-  "Modelos organizativos y arquetipo — Comparar centralized / decentralized / center-led y elegir arquetipo con criterios (90 min)";
+  "Modelos organizativos y arquetipo — Comparar centralized / decentralized / center-led (90 min)";
 
 const newId = () => crypto.randomUUID();
 
@@ -544,8 +544,7 @@ export default function ModelosOrganizativosCanvas() {
                   Modelos Organizativos y Arquetipo (Parte 3)
                 </h1>
                 <p className="text-xs md:text-sm text-slate-300">
-                  Comparar centralized / decentralized / center-led y elegir
-                  arquetipo con criterios · 90 min
+                  Comparar centralized / decentralized / center-led · 90 min
                 </p>
               </div>
             </div>
