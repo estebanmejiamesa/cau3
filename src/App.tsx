@@ -69,7 +69,7 @@ interface AppState {
   };
 }
 
-const VERSION = "CaujaralCanvas-Modelos-v6" as const;
+const VERSION = "CaujaralCanvas-Modelos-v7" as const;
 const DEFAULT_CAPTION =
   "Modelos organizativos y arquetipo — Comparar centralized / decentralized / center-led y elegir arquetipo con criterios (90 min)";
 
@@ -685,18 +685,17 @@ export default function ModelosOrganizativosCanvas() {
             subtitle="Revisen cada modelo, su definición base (no editable), fortalezas, riesgos y viabilidad."
           >
             <div className="overflow-auto">
-              <table className="w-full min-w-[1020px] text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead>
                   <tr className="text-left text-slate-300">
-                    <th className="py-2 pr-4 w-[36%]">
+                    <th className="py-2 pr-4 w-[40%]">
                       Modelo organizativo (definición)
                     </th>
-                    <th className="py-2 pr-4 w-[28%]">
+                    <th className="py-2 pr-4 w-[30%]">
                       Fortalezas para el Club
                     </th>
-                    <th className="py-2 pr-4 w-[28%]">Riesgos o fricciones</th>
+                    <th className="py-2 pr-4 w-[22%]">Riesgos o fricciones</th>
                     <th className="py-2 pr-4 w-[8%]">¿Viable?</th>
-                    <th className="py-2 pr-0 w-[0%]"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -715,10 +714,10 @@ export default function ModelosOrganizativosCanvas() {
                         </div>
                       </td>
 
-                      {/* Fortalezas — área ampliada */}
+                      {/* Fortalezas — área más grande */}
                       <td className="py-2 pr-4">
                         <TextArea
-                          className="min-h-[88px] leading-relaxed"
+                          className="min-h-[132px] leading-relaxed resize-y"
                           value={m.fortalezas}
                           onChange={(e) =>
                             updateField(
@@ -732,10 +731,10 @@ export default function ModelosOrganizativosCanvas() {
                         />
                       </td>
 
-                      {/* Riesgos — área ampliada */}
+                      {/* Riesgos — área más grande */}
                       <td className="py-2 pr-4">
                         <TextArea
-                          className="min-h-[88px] leading-relaxed"
+                          className="min-h-[132px] leading-relaxed resize-y"
                           value={m.riesgos}
                           onChange={(e) =>
                             updateField(
@@ -767,34 +766,10 @@ export default function ModelosOrganizativosCanvas() {
                           <option>Depende</option>
                         </Select>
                       </td>
-
-                      {/* Eliminar (queda deshabilitado si hay ≤4) */}
-                      <td className="py-2 pr-0 text-right">
-                        <button
-                          onClick={() =>
-                            removeRow(["parte1", "B_modelos"], m.id)
-                          }
-                          className={`text-sm ${
-                            state.parte1.B_modelos.length <= 4
-                              ? "text-slate-600 cursor-not-allowed"
-                              : "text-slate-300 hover:text-slate-100"
-                          }`}
-                          disabled={state.parte1.B_modelos.length <= 4}
-                        >
-                          Eliminar
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            <div className="mt-3">
-              <Pill>
-                Incluye definiciones para: Funcional · Divisional · Matricial ·
-                Híbrido/Center-led
-              </Pill>
             </div>
           </SectionCard>
         </div>
